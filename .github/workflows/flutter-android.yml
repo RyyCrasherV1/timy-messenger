@@ -6,6 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # tambahkan timeout untuk mencegah hang
 
     steps:
       - uses: actions/checkout@v4
@@ -13,16 +14,23 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.3.10  # gunakan versi lama, kompatibel Dart 2.x
+          flutter-version: 3.3.10
+          cache: true  # cache Flutter SDK untuk build lebih cepat
 
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          echo "📦 Downloading dependencies..."
+          flutter pub get --suppress-analytics
+          echo "✅ Dependencies downloaded successfully"
 
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          echo "🔨 Building APK..."
+          flutter build apk --release --suppress-analytics
+          echo "✅ APK built successfully"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-${{ github.run_number }}  # tambahkan nomor build
           path: build/app/outputs/flutter-apk/app-release.apk
