@@ -1,0 +1,44 @@
+name: Release Timmy APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'  # otomatis trigger saat push tag versi
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: Timmy-release
+          path: release_files/
+
+      - name: Generate release notes
+        run: |
+          TAG_NAME=${GITHUB_REF##*/}
+          cat > release_notes.md << EOF
+Release of version $TAG_NAME
+
+$(git log $(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~10)..HEAD --pretty=format:"- %s" --no-merges | head -10 || echo "- Initial release")
+EOF
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          TAG_NAME=${GITHUB_REF##*/}
+          gh release create "$TAG_NAME" \
+            --title "$TAG_NAME" \
+            --notes-file release_notes.md \
+            --latest \
+            release_files/*.apk
