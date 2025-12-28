@@ -1,0 +1,41 @@
+name: Build Timmy APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.3'
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release --no-shrink
+
+      - name: Sign Release APK
+        uses: ilharp/sign-android-release@v2.0.0
+        with:
+          releaseDir: build/app/outputs/flutter-apk
+          signingKey: ${{ secrets.KEYSTORE }}
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          buildToolsVersion: 35.0.0
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Timmy-release
+          path: build/app/outputs/flutter-apk/app-release.apk
